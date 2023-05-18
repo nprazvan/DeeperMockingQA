@@ -1,5 +1,6 @@
 import { it, vi, expect } from "vitest";
 import { sendDataRequest } from "./http";
+import { HttpError } from "./errors";
 
 const testResponseData = { testKey: "testData" };
 const testFetch = vi.fn((url, options) => {
@@ -40,4 +41,25 @@ it("should convert the provided data to JSON before sending the request", async 
   }
 
   expect(errorMessage).not.toBe("Not a string.");
+});
+
+it("should throw an HttpError in case of non-ok responses", () => {
+  testFetch.mockImplementationOnce((url, options) => {
+    return new Promise((res, rej) => {
+      const testResponse = {
+        ok: false,
+        json() {
+          return new Promise((res, rej) => {
+            res(testResponseData);
+          });
+        },
+      };
+
+      res(testResponse);
+    });
+  });
+
+  const testData = { key: "test" };
+
+  return expect(sendDataRequest(testData)).rejects.toBeInstanceOf(HttpError);
 });
